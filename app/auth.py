@@ -19,7 +19,8 @@ from flask import request, render_template, make_response, redirect
 import bunq
 import storage
 import util
-
+import jwt
+from config import settings
 
 def user_login():
     """ Handles password login """
@@ -86,27 +87,44 @@ def set_bunq_oauth_response():
         oauthdata = storage.get_value("bunq2IFTTT", "bunq_oauth_new")
 
         code = request.args["code"]
-        if len(code) != 64:
+        if len(code) != 45:
             print("Invalid code: ", code)
             return render_template("message.html", msgtype="danger", msg=\
                 'Invalid code! <br><br>'\
                 '<a href="/">Click here to try again</a>')
 
-        url = "https://api.oauth.bunq.com/v1/token?grant_type="\
-              "authorization_code&code={}&redirect_uri={}"\
-              "&client_id={}&client_secret={}"\
-              .format(code, request.url_root + "auth",
-                      oauthdata["client_id"], oauthdata["client_secret"])
-        req = requests.post(url)
+        redirect_url = "https://1b12-47-188-92-41.ngrok.io/auth"
+        # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
+        url = "https://dev-8smh4pafwr18iywh.us.auth0.com/oauth/token"
+        body = {
+            'client_id': oauthdata["client_id"],
+            'client_secret': oauthdata["client_secret"],
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': redirect_url
+        }
+        # url = "https://api.oauth.bunq.com/v1/token?grant_type="\
+        #       "authorization_code&code={}&redirect_uri={}"\
+        #       "&client_id={}&client_secret={}"\
+        #       .format(code, request.url_root + "auth",
+        #               oauthdata["client_id"], oauthdata["client_secret"])
+        req = requests.post(url, data=body)
         key = req.json()["access_token"]
-
+        print("Access token: " + key)
+        
         oauthdata["timestamp"] = int(time.time())
         oauthdata["triggers"] = []
         storage.store_large("bunq2IFTTT", "bunq_oauth", oauthdata)
 
+        result = VerifyToken(key).verify()
+        if result.get("status"):
+            print("Failed validating token: ", result)
+            return render_template("message.html", msgtype="danger", msg=\
+                'Failed validating token!<br><br>'\
+                '<a href="/">Click here to return home</a>')
         config = bunq.install(key, allips=oauthdata["allips"],
                               urlroot=request.url_root, mode="OAuth")
-        util.sync_permissions(config)
+        #util.sync_permissions(config)
         bunq.save_config(config)
 
         return render_template("message.html", msgtype="success", msg=\
@@ -128,8 +146,10 @@ def set_bunq_oauth_api_key():
 
         key = request.form["bunqkey"]
         tokens = re.split("[:, \r\n\t]+", key.strip())
+        print("client id: " + tokens[2]);
+        print("client secret: " + tokens[5])
 
-        if len(tokens) == 6 and len(tokens[2]) == 64 and len(tokens[5]) == 64:
+        if len(tokens) == 6 and len(tokens[2]) == 32 and len(tokens[5]) == 64:
             # OAuth client id/secret submitted
             oauthdata = {
                 "client_id": tokens[2],
@@ -137,10 +157,17 @@ def set_bunq_oauth_api_key():
                 "allips": allips,
             }
             storage.store_large("bunq2IFTTT", "bunq_oauth_new", oauthdata)
-            redirect_url = request.url_root + "auth"
-            url = "https://oauth.bunq.com/auth?response_type=code"\
+            redirect_url = "https://1b12-47-188-92-41.ngrok.io/auth"
+            # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
+            url = "https://dev-8smh4pafwr18iywh.us.auth0.com/authorize?response_type=code"\
                   "&client_id=" + tokens[2] + \
-                  "&redirect_uri=" + redirect_url
+                  "&audience=nuistics-service-api" + \
+                  "&redirect_uri=" + redirect_url + \
+                  "&scope=openid%20profile%20email%20offline_access%20ifttt"
+            # redirect_url = request.url_root + "auth"
+            # url = "https://oauth.bunq.com/auth?response_type=code"\
+            #       "&client_id=" + tokens[2] + \
+            #       "&redirect_uri=" + redirect_url
             return render_template("message.html", msgtype="primary", msg=\
                 "Make sure the following URL is included as a redirect url:"\
                 "<br><br><b>" + redirect_url + "</b><br><br>"\
@@ -176,11 +203,54 @@ def bunq_oauth_reauthorize():
     """ Reauthorize OAuth using the same client id/secret """
     oauthdata = storage.get_value("bunq2IFTTT", "bunq_oauth")
     storage.store_large("bunq2IFTTT", "bunq_oauth_new", oauthdata)
-    redirect_url = request.url_root + "auth"
-    url = "https://oauth.bunq.com/auth?response_type=code"\
-          "&client_id=" + oauthdata["client_id"] + \
-          "&redirect_uri=" + redirect_url
+    redirect_url = "https://1b12-47-188-92-41.ngrok.io/auth"
+    # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
+    url = "https://dev-8smh4pafwr18iywh.us.auth0.com/authorize?response_type=code"\
+            "&client_id=" + oauthdata["client_id"] + \
+            "&connection=CONNECTING" + \
+            "&audience=nuistics-service-api" + \
+            "&redirect_uri=" + redirect_url + \
+            "&scope=openid%20profile%20email%20offline_access%20ifttt"
+    # redirect_url = request.url_root + "auth"
+    # url = "https://oauth.bunq.com/auth?response_type=code"\
+    #       "&client_id=" + oauthdata["client_id"] + \
+    #       "&redirect_uri=" + redirect_url
     return render_template("message.html", msgtype="primary", msg=\
         "Make sure the following URL is included as a redirect url:"\
         "<br><br><b>" + redirect_url + "</b><br><br>"\
         'Then click <a href="' + url + '">this link</a>')
+
+class VerifyToken():
+    """Does all the token verification using PyJWT"""
+
+    def __init__(self, token, permissions=None, scopes=None):
+        self.token = token
+
+        # This gets the JWKS from a given URL and does processing so you can
+        # use any of the keys available
+        jwks_url = f'https://{settings.auth0_domain}/.well-known/jwks.json'
+        self.jwks_client = jwt.PyJWKClient(jwks_url)
+
+    def verify(self):
+        # This gets the 'kid' from the passed token
+        try:
+            self.signing_key = self.jwks_client.get_signing_key_from_jwt(
+                self.token
+            ).key
+        except jwt.exceptions.PyJWKClientError as error:
+            return {"status": "error", "msg": error.__str__()}
+        except jwt.exceptions.DecodeError as error:
+            return {"status": "error", "msg": error.__str__()}
+
+        try: 
+            payload = jwt.decode(
+                self.token,
+                self.signing_key,
+                algorithms=settings.algorithms,
+                audience=settings.auth0_audience,
+                issuer=settings.issuer,
+            )
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+        return payload

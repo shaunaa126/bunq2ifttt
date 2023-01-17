@@ -26,6 +26,7 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 import storage
+from config import settings
 
 NAME = "bunq2IFTTT"
 
@@ -67,18 +68,19 @@ def install(token, name=NAME, allips=False, urlroot=None, mode=None):
             generate_key(config)
             install_key(config)
 
-        register_token(config, name, allips)
-        retrieve_userid(config)
-        retrieve_accounts(config)
+        #register_token(config, name, allips)
+        #retrieve_userid(config)
+        get_user_info(config)
+        #retrieve_accounts(config)
         save_config(config)
 
-        if urlroot is not None:
-            register_callback(config, urlroot)
+        # if urlroot is not None:
+        #     register_callback(config, urlroot)
 
-        # Unregister only when the user_id has changed (i.e. when using OAuth)
-        if urlroot is not None and "user_id" in oldconfig \
-                               and oldconfig["user_id"] != config["user_id"]:
-            unregister_callback(oldconfig)
+        # # Unregister only when the user_id has changed (i.e. when using OAuth)
+        # if urlroot is not None and "user_id" in oldconfig \
+        #                        and oldconfig["user_id"] != config["user_id"]:
+        #     unregister_callback(oldconfig)
 
         return config
 
@@ -150,6 +152,15 @@ def retrieve_userid(config):
             userid = user[typ]["id"]
             config["user_id"] = userid
 
+def get_user_info(config):
+    """ Retrieve the userid that needs to be used in api calls """
+    print("[nuistics] Retrieving userid...")
+    token = config["access_token"]
+    headers = { 'content-type': "application/json", 'Authorization': f"Bearer {token}" }
+    res = requests.get(settings.auth0_userinfo, headers=headers)
+    data = res.json()
+    config["user_id"] = data["sub"]
+    #user = UserInfo(name = data["name"], id = data["sub"], url = "http//example.com/users/shaunaa126")
 
 _TYPE_TRANSLATION = {
     "MonetaryAccountBank": "monetary-account-bank",
