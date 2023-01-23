@@ -93,7 +93,7 @@ def set_bunq_oauth_response():
                 'Invalid code! <br><br>'\
                 '<a href="/">Click here to try again</a>')
 
-        redirect_url = "https://1b12-47-188-92-41.ngrok.io/auth"
+        redirect_url = "https://4788-47-188-92-41.ngrok.io/auth"
         # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
         url = "https://dev-8smh4pafwr18iywh.us.auth0.com/oauth/token"
         body = {
@@ -157,7 +157,7 @@ def set_bunq_oauth_api_key():
                 "allips": allips,
             }
             storage.store_large("bunq2IFTTT", "bunq_oauth_new", oauthdata)
-            redirect_url = "https://1b12-47-188-92-41.ngrok.io/auth"
+            redirect_url = "https://4788-47-188-92-41.ngrok.io/auth"
             # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
             url = "https://dev-8smh4pafwr18iywh.us.auth0.com/authorize?response_type=code"\
                   "&client_id=" + tokens[2] + \
@@ -203,7 +203,7 @@ def bunq_oauth_reauthorize():
     """ Reauthorize OAuth using the same client id/secret """
     oauthdata = storage.get_value("bunq2IFTTT", "bunq_oauth")
     storage.store_large("bunq2IFTTT", "bunq_oauth_new", oauthdata)
-    redirect_url = "https://1b12-47-188-92-41.ngrok.io/auth"
+    redirect_url = "https://4788-47-188-92-41.ngrok.io/auth"
     # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
     url = "https://dev-8smh4pafwr18iywh.us.auth0.com/authorize?response_type=code"\
             "&client_id=" + oauthdata["client_id"] + \

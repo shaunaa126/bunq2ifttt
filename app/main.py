@@ -247,6 +247,11 @@ def ifttt_test_setup():
                     },
                     "bunq_oauth_expires": {
                         "hours": "9876543210",
+                    },
+                    "nuistics_newimage": {
+                        "account": test_account,
+                        "description_comparator": "equal",
+                        "description_value": "dog",
                     }
                 },
                 "actions": {
@@ -408,6 +413,8 @@ def ifttt_comparator_numeric_options():
            "description_comparator/options", methods=["POST"])
 @app.route("/ifttt/v1/triggers/bunq_request/fields/"\
            "description_comparator_2/options", methods=["POST"])
+@app.route("/ifttt/v1/triggers/nuistics_newimage/fields/"\
+           "description_comparator/options", methods=["POST"])
 def ifttt_comparator_alpha_options():
     """ Option values for alphanumeric comparators """
     errmsg = check_ifttt_service_key()
@@ -492,6 +499,20 @@ def ifttt_account_options_mutation():
 def ifttt_account_options_request():
     """ Option values for request trigger account selection"""
     return ifttt_account_options(True, "Request")
+
+@app.route("/ifttt/v1/triggers/nuistics_newimage/fields/"\
+           "account/options", methods=["POST"])
+def ifttt_account_options_newimage():
+    """ Option values for newimage account selection"""
+    errmsg = check_ifttt_service_key()
+    if errmsg:
+        return errmsg, 401
+    data = {"data": [
+        {"value": "NL42BUNQ0123456789", "label": "NL42BUNQ0123456789"},
+        {"value": "NL42BUNQ9876543210", "label": "NL42BUNQ9876543210"},
+    ]}
+    return json.dumps(data)
+    #return ifttt_account_options(False, None)
 
 @app.route("/ifttt/v1/actions/bunq_internal_payment/fields/"\
            "source_account/options", methods=["POST"])
@@ -657,6 +678,10 @@ def bunq2ifttt_request():
     """ Callback for bunq REQUEST events """
     return "", event.bunq_callback_request()
 
+@app.route("/nuistics_request", methods=["POST"])
+def nuistics_request():
+    """ Callback for nuistics REQUEST events """
+    return "", event.nuistics_callback_request()
 
 ###############################################################################
 # Event trigger endpoints
@@ -730,6 +755,22 @@ def trigger_oauth_expires_delete(triggerid):
         return errmsg, 401
     return event.trigger_oauth_expires_delete(triggerid)
 
+@app.route("/ifttt/v1/triggers/nuistics_newimage", methods=["POST"])
+def trigger_newimage():
+    """ Retrieve nuistics_newimage trigger items """
+    errmsg = check_ifttt_service_key()
+    if errmsg:
+        return errmsg, 401
+    return event.trigger_newimage()
+
+@app.route("/ifttt/v1/triggers/nuistics_newimage/trigger_identity/<triggerid>",
+           methods=["DELETE"])
+def trigger_newimage_delete(triggerid):
+    """ Delete a trigger_identity for the nuistics_newimage trigger """
+    errmsg = check_ifttt_service_key()
+    if errmsg:
+        return errmsg, 401
+    return event.trigger_newimage_delete(triggerid)
 
 ###############################################################################
 # Payment action endpoints

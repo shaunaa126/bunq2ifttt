@@ -183,6 +183,80 @@ def bunq_callback_mutation():
 
     return 200
 
+def nuistics_callback_request():
+    """ Handle nuistics callbacks of type REQUEST """
+    try:
+        data = request.get_json()
+        print("[nuisticscb_request] input: {}".format(json.dumps(data)))
+
+        obj = data["request"]
+        metaid = obj["id"]
+        if storage.seen("seen_request", metaid):
+            print("[nuisticscb_request] duplicate transaction")
+            return 200
+
+        acc = obj["account"]
+        if not acc:
+            print("[nuisticscb_request] trigger not enabled for this account")
+            return 200
+
+        # item = {
+        #     "created_at": obj["created"],
+        #     "date": arrow.get(obj["created"]).format("YYYY-MM-DD"),
+        #     "account": acc,
+        #     "description": obj["description"],
+        #     "request_id": metaid,
+        #     "meta": {
+        #         "id": metaid,
+        #         "timestamp": arrow.get(obj["created"]).timestamp
+        #     }
+        # }
+
+        item = {
+            "created_at": obj["created"],
+            "account": acc,
+            "description": obj["description"],
+            "request_id": metaid,
+            "meta": {
+                "id": metaid,
+                "timestamp": obj["created"]
+            }
+        }
+
+        print("[nuisticscb_request] translated: {}".format(json.dumps(item)))
+
+        triggerids = []
+        for account in ["ANY", acc]:
+            for trigger in storage.query("trigger_newimage",
+                                         "account", "=", account):
+                ident = trigger["identity"]
+                if check_fields("newimage", ident, item, trigger["fields"]):
+                    triggerids.append(ident)
+                    storage.insert_value_maxsize("trigger_newimagecb",
+                                                 ident+"_t", item, 50)
+        print("[nuisticscb_request] Matched triggers:", json.dumps(triggerids))
+        if triggerids:
+            data = {"data": []}
+            for triggerid in triggerids:
+                data["data"].append({"trigger_identity": triggerid})
+            headers = {
+                "IFTTT-Channel-Key": util.get_ifttt_service_key(),
+                "IFTTT-Service-Key": util.get_ifttt_service_key(),
+                "X-Request-ID": uuid.uuid4().hex,
+                "Content-Type": "application/json"
+            }
+            print("[nuisticscb_request] to ifttt: {}".format(json.dumps(data)))
+            res = requests.post("https://realtime.ifttt.com/v1/notifications",
+                                headers=headers, data=json.dumps(data))
+            print("[nuisticscb_request] result: {} {}"
+                  .format(res.status_code, res.text))
+
+    except Exception:
+        traceback.print_exc()
+        print("[nuisticscb_request] ERROR during handling nuistics callback")
+        return 500
+
+    return 200
 
 ###############################################################################
 # Helper methods for bunq callbacks
@@ -830,3 +904,122 @@ def trigger_oauth_expires_delete(identity):
     """ Delete a specific trigger identity for trigger bunq_oauth_expires """
     # We don't store trigger identities, so this call can be ignored
     return ""
+
+###############################################################################
+# IFTTT trigger nuistics_newimage
+###############################################################################
+
+def trigger_newimage():
+    """ Callback for IFTTT trigger nuistics_newimage """
+    try:
+        data = request.get_json()
+        print("[trigger_newimage] input: {}".format(json.dumps(data)))
+
+        if "triggerFields" not in data or \
+                "account" not in data["triggerFields"]:
+            print("[trigger_newimage] ERROR: account field missing!")
+            return json.dumps({"errors": [{"message": "Invalid data"}]}), 400
+        account = data["triggerFields"]["account"]
+        fields = data["triggerFields"]
+        fieldsstr = json.dumps(fields)
+
+        if "trigger_identity" not in data:
+            print("[trigger_newimage] ERROR: trigger_identity field missing!")
+            return json.dumps({"errors": [{"message": "Invalid data"}]}), 400
+        identity = data["trigger_identity"]
+
+        limit = 50
+        if "limit" in data:
+            limit = data["limit"]
+
+        if account == "NL42BUNQ0123456789":
+            return trigger_newimage_test(limit)
+
+        timezone = "UTC"
+        if "user" in data and "timezone" in data["user"]:
+            timezone = data["user"]["timezone"]
+
+        entity = storage.retrieve("trigger_newimage", identity)
+        if entity is not None:
+            if entity["account"] != account or \
+                    json.dumps(entity["fields"]) != fieldsstr:
+                storage.store("trigger_newimage", identity, {
+                    "account": account,
+                    "identity": identity,
+                    "fields": fields
+                })
+                print("[trigger_newimage] updating trigger {} {}"
+                      .format(account, fieldsstr))
+        else:
+            storage.store("trigger_newimage", identity, {
+                "account": account,
+                "identity": identity,
+                "fields": fields
+            })
+            print("[trigger_newimage] storing new trigger {} {}"
+                  .format(account, fieldsstr))
+
+        transactions = storage.get_value("trigger_newimagecb", identity+"_t")
+        if transactions is None:
+            transactions = []
+        for trans in transactions:
+            trans["created_at"] = arrow.get(trans["created_at"])\
+                                  .to(timezone).isoformat()
+
+        print("[trigger_newimage] Found {} transactions"
+              .format(len(transactions)))
+        return json.dumps({"data": transactions[:limit]})
+    except Exception:
+        traceback.print_exc()
+        print("[trigger_newimage] ERROR: cannot retrieve new image request data")
+        return json.dumps({"errors": [{"message": \
+                           "Cannot retrieve new image request data"}]}), 400
+
+
+def trigger_newimage_test(limit):
+    """ Test data for IFTTT trigger nuistics_newimage """
+    result = [{
+        "created_at": "2018-01-05T11:25:15+00:00",
+        "account": "NL42BUNQ0123456789",
+        "description": "dog",
+        "request_id": "123e4567-e89b-12d3-a456-426655440001",
+        "meta": {
+            "id": "1",
+            "timestamp": "1515151515"
+        }
+    }, {
+        "created_at": "2014-10-24T09:03:34+00:00",
+        "account": "NL42BUNQ0123456789",
+        "description": "dog bowl",
+        "request_id": "123e4567-e89b-12d3-a456-426655440002",
+        "meta": {
+            "id": "2",
+            "timestamp": "1414141414"
+        }
+    }, {
+        "created_at": "2008-05-30T04:20:12+00:00",
+        "account": "NL42BUNQ0123456789",
+        "description": "desk",
+        "request_id": "123e4567-e89b-12d3-a456-426655440003",
+        "meta": {
+            "id": "3",
+            "timestamp": "1212121212"
+        }
+    }]
+    return json.dumps({"data": result[:limit]})
+
+
+def trigger_newimage_delete(identity):
+    """ Delete a specific trigger identity for IFTTT trigger nuistics_newimage """
+    try:
+        # for index in storage.query_indexes("request_"+identity):
+        #     storage.remove("request_"+identity, index)
+        storage.remove("trigger_newimage", identity)
+        storage.remove("trigger_newimagecb", identity+"_t")
+
+        return ""
+    except Exception:
+        traceback.print_exc()
+        print("[trigger_newimage_delete] ERROR: cannot delete trigger")
+        return json.dumps({"errors": [{"message": "Cannot delete trigger"}]}),\
+               400
