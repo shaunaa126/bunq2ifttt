@@ -18,6 +18,9 @@ import paymentrequest
 import storage
 import targetbalance
 import util
+import auth
+import requests
+from config import settings
 
 # pylint: disable=invalid-name
 app = Flask(__name__)
@@ -141,6 +144,14 @@ def check_ifttt_service_key():
         return json.dumps({"errors": [{"message": "Invalid IFTTT key"}]})
     return None
 
+def check_access_token():
+    """ Helper method to check the Access Token header """
+    if "Authorization" not in request.headers:
+        return json.dumps({"errors": [{"message": "Missing access token header"}]})
+    result = auth.VerifyToken(request.headers.get('Authorization').split()[1]).verify()
+    if result.get("status"):
+        return json.dumps({"errors": [{"message": "Error in verifying access token"}]})
+    return None
 
 ###############################################################################
 # Cron endpoints
@@ -179,6 +190,25 @@ def ifttt_status():
 
     return ""
 
+@app.route("/ifttt/v1/user/info")
+def ifttt_user_info():
+    """ User info endpoint for IFTTT platform endpoint tests """
+    errmsg = check_access_token()
+    if errmsg:
+        return errmsg, 401
+    headers = { 'content-type': "application/json", 'Authorization': f"Bearer {request.headers.get('Authorization').split()[1]}" }
+    res = requests.get(settings.auth0_userinfo, headers=headers)
+
+    data = res.json()
+
+    return json.dumps({
+        "data": {
+            "id": data["sub"],
+            "name": data["name"],
+            "url": "http//example.com/users/shaunaa126"
+        }
+    })
+
 @app.route("/ifttt/v1/test/setup", methods=["POST"])
 def ifttt_test_setup():
     """ Testdata endpoint for IFTTT platform endpoint tests """
@@ -190,6 +220,7 @@ def ifttt_test_setup():
 
     return json.dumps({
         "data": {
+            "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5qcHNaMVZkT1pwRWpGdmNNV2FqcCJ9.eyJpc3MiOiJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MzliN2JhMjljNDNjZDZmNzRlN2NhOWUiLCJhdWQiOlsibnVpc3RpY3Mtc2VydmljZS1hcGkiLCJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzQ1MTE4NzcsImV4cCI6MTY3NDU5ODI3NywiYXpwIjoiV3U4SThjZU1EbklGYlFPYzFtVGl0elNtVm0zOU41blciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIGlmdHR0IG9mZmxpbmVfYWNjZXNzIn0.coLG2pu5RqYDwTWpFGzCJSsjZBWVSwcHulaXL_Zgn0lTeuX3RqkPj7dlIrXZaf1v2wbeUPFviDtJZTRA6-j_-zM1oA29enydBOXy-Bhjbb1oIOimgXy9h8XwCwHvWRizuLd9snilx2AvRit0Hjxx8CEK4h6_vtuk8oxTm7FHxbqPPO5fzXUva8XMlzCs_AF7AE9LwIKYh7eN9zwfSA3xZ91J7nK3BnYLQeMyvpVF3WXLeyf5RnDbJPh81i2EmsrK5DQHPUSvwv-JZG1_Mla5LP-dS09Zf3axZ5qRqNp4Vz95NJhbvQx7eBQo39r68XTG9_vt1fXqY8bW9ukJJo_MHg",
             "samples": {
                 "triggers": {
                     "bunq_mutation": {

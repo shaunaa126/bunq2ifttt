@@ -213,13 +213,13 @@ def nuistics_callback_request():
         # }
 
         item = {
-            "created_at": obj["created"],
+            "created_at": arrow.utcnow().isoformat(),
             "account": acc,
             "description": obj["description"],
             "request_id": metaid,
             "meta": {
                 "id": metaid,
-                "timestamp": obj["created"]
+                "timestamp": arrow.utcnow().timestamp()
             }
         }
 
