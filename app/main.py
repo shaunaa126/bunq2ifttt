@@ -220,7 +220,7 @@ def ifttt_test_setup():
 
     return json.dumps({
         "data": {
-            "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5qcHNaMVZkT1pwRWpGdmNNV2FqcCJ9.eyJpc3MiOiJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MzliN2JhMjljNDNjZDZmNzRlN2NhOWUiLCJhdWQiOlsibnVpc3RpY3Mtc2VydmljZS1hcGkiLCJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzQ1MTE4NzcsImV4cCI6MTY3NDU5ODI3NywiYXpwIjoiV3U4SThjZU1EbklGYlFPYzFtVGl0elNtVm0zOU41blciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIGlmdHR0IG9mZmxpbmVfYWNjZXNzIn0.coLG2pu5RqYDwTWpFGzCJSsjZBWVSwcHulaXL_Zgn0lTeuX3RqkPj7dlIrXZaf1v2wbeUPFviDtJZTRA6-j_-zM1oA29enydBOXy-Bhjbb1oIOimgXy9h8XwCwHvWRizuLd9snilx2AvRit0Hjxx8CEK4h6_vtuk8oxTm7FHxbqPPO5fzXUva8XMlzCs_AF7AE9LwIKYh7eN9zwfSA3xZ91J7nK3BnYLQeMyvpVF3WXLeyf5RnDbJPh81i2EmsrK5DQHPUSvwv-JZG1_Mla5LP-dS09Zf3axZ5qRqNp4Vz95NJhbvQx7eBQo39r68XTG9_vt1fXqY8bW9ukJJo_MHg",
+            "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5qcHNaMVZkT1pwRWpGdmNNV2FqcCJ9.eyJpc3MiOiJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MzliN2JhMjljNDNjZDZmNzRlN2NhOWUiLCJhdWQiOlsibnVpc3RpY3Mtc2VydmljZS1hcGkiLCJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzQ2MDE5MDUsImV4cCI6MTY3NDY4ODMwNSwiYXpwIjoiV3U4SThjZU1EbklGYlFPYzFtVGl0elNtVm0zOU41blciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIGlmdHR0IG9mZmxpbmVfYWNjZXNzIn0.CJgmHsb2FThi5FyDMytAFPsJq0Tci8LoR7F7MZMIvazPAauqop0q6vnAWM-No2HMO-d0iz-ywMvgutHMI0uR89nifKdvoNziUvaBLBnee0H7HCMws-anhAgxtlHsVfz0x1KR4LhFSEHNw3dCbCVoq0Gddyd1jzSR_2Umo31nNA-iejE4KIbrCh4AojYXzNsF5Rtis4yK7TL14TJqvetoNghH50coNdOXHMajsxVULPUVWDN9xDwVf9d1bYA3qY-DGncMsX0qzTyLdob9TEd5AhxzIzCjarAms_mMreJmbEqb9UwgZf0-2NmB7zCjIrrFQ_uQARWdVDehsICyubbFDA",
             "samples": {
                 "triggers": {
                     "bunq_mutation": {
@@ -448,7 +448,8 @@ def ifttt_comparator_numeric_options():
            "description_comparator/options", methods=["POST"])
 def ifttt_comparator_alpha_options():
     """ Option values for alphanumeric comparators """
-    errmsg = check_ifttt_service_key()
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
     if errmsg:
         return errmsg, 401
 
@@ -535,7 +536,8 @@ def ifttt_account_options_request():
            "account/options", methods=["POST"])
 def ifttt_account_options_newimage():
     """ Option values for newimage account selection"""
-    errmsg = check_ifttt_service_key()
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
     if errmsg:
         return errmsg, 401
     data = {"data": [
@@ -789,7 +791,8 @@ def trigger_oauth_expires_delete(triggerid):
 @app.route("/ifttt/v1/triggers/nuistics_newimage", methods=["POST"])
 def trigger_newimage():
     """ Retrieve nuistics_newimage trigger items """
-    errmsg = check_ifttt_service_key()
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
     if errmsg:
         return errmsg, 401
     return event.trigger_newimage()
@@ -798,7 +801,8 @@ def trigger_newimage():
            methods=["DELETE"])
 def trigger_newimage_delete(triggerid):
     """ Delete a trigger_identity for the nuistics_newimage trigger """
-    errmsg = check_ifttt_service_key()
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
     if errmsg:
         return errmsg, 401
     return event.trigger_newimage_delete(triggerid)
