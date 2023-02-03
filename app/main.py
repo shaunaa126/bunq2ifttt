@@ -220,7 +220,7 @@ def ifttt_test_setup():
 
     return json.dumps({
         "data": {
-            "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5qcHNaMVZkT1pwRWpGdmNNV2FqcCJ9.eyJpc3MiOiJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MzliN2JhMjljNDNjZDZmNzRlN2NhOWUiLCJhdWQiOlsibnVpc3RpY3Mtc2VydmljZS1hcGkiLCJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzQ2MDE5MDUsImV4cCI6MTY3NDY4ODMwNSwiYXpwIjoiV3U4SThjZU1EbklGYlFPYzFtVGl0elNtVm0zOU41blciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIGlmdHR0IG9mZmxpbmVfYWNjZXNzIn0.CJgmHsb2FThi5FyDMytAFPsJq0Tci8LoR7F7MZMIvazPAauqop0q6vnAWM-No2HMO-d0iz-ywMvgutHMI0uR89nifKdvoNziUvaBLBnee0H7HCMws-anhAgxtlHsVfz0x1KR4LhFSEHNw3dCbCVoq0Gddyd1jzSR_2Umo31nNA-iejE4KIbrCh4AojYXzNsF5Rtis4yK7TL14TJqvetoNghH50coNdOXHMajsxVULPUVWDN9xDwVf9d1bYA3qY-DGncMsX0qzTyLdob9TEd5AhxzIzCjarAms_mMreJmbEqb9UwgZf0-2NmB7zCjIrrFQ_uQARWdVDehsICyubbFDA",
+            "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5qcHNaMVZkT1pwRWpGdmNNV2FqcCJ9.eyJpc3MiOiJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MzliN2JhMjljNDNjZDZmNzRlN2NhOWUiLCJhdWQiOlsibnVpc3RpY3Mtc2VydmljZS1hcGkiLCJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzU0NjA1MjcsImV4cCI6MTY3NTU0NjkyNywiYXpwIjoiV3U4SThjZU1EbklGYlFPYzFtVGl0elNtVm0zOU41blciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIGlmdHR0IG9mZmxpbmVfYWNjZXNzIn0.jvDqBGGgoN5bsGmK48Y2Gxdn6WiwDvkqlmi9QeIEylCT1lvUSOXiYi-MBgEBHb1aO6hmknK6Vp0CNIMgfZhFV06SSWfJ8U3e2ZEFc2UCB_5pQAJdAFywUoqzCSwuB1Vhz3WYmD_B1BFdzrEPK_7l-Vs33_jFYoYlxzfD1fx3XvKAc5VmghR6xmhouCaHGdUyDIFcqD9sxYG8li-_Rue7BV4NjIFDyiszlf_0vL2RMPXdO0vYZlOQPyagvqKKTK7MiEqli0w77X7SRrDIXaEZk74qE5NfDogTN8x3z5nEls1tpp-H_UU80zham1ro-tMHnQ1MQIlC_AKoHDWTkTLM7w",
             "samples": {
                 "triggers": {
                     "bunq_mutation": {
@@ -790,6 +790,7 @@ def trigger_oauth_expires_delete(triggerid):
 
 @app.route("/ifttt/v1/triggers/nuistics_newimage", methods=["POST"])
 def trigger_newimage():
+    print(request.headers.get('Authorization').split()[1])
     """ Retrieve nuistics_newimage trigger items """
     # errmsg = check_ifttt_service_key()
     errmsg = check_access_token()

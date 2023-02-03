@@ -189,7 +189,7 @@ def nuistics_callback_request():
         data = request.get_json()
         print("[nuisticscb_request] input: {}".format(json.dumps(data)))
 
-        obj = data["request"]
+        obj = data
         metaid = obj["id"]
         if storage.seen("seen_request", metaid):
             print("[nuisticscb_request] duplicate transaction")
