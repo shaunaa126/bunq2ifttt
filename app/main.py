@@ -18,6 +18,9 @@ import paymentrequest
 import storage
 import targetbalance
 import util
+import auth
+import requests
+from config import settings
 
 # pylint: disable=invalid-name
 app = Flask(__name__)
@@ -141,6 +144,14 @@ def check_ifttt_service_key():
         return json.dumps({"errors": [{"message": "Invalid IFTTT key"}]})
     return None
 
+def check_access_token():
+    """ Helper method to check the Access Token header """
+    if "Authorization" not in request.headers:
+        return json.dumps({"errors": [{"message": "Missing access token header"}]})
+    result = auth.VerifyToken(request.headers.get('Authorization').split()[1]).verify()
+    if result.get("status"):
+        return json.dumps({"errors": [{"message": "Error in verifying access token"}]})
+    return None
 
 ###############################################################################
 # Cron endpoints
@@ -179,6 +190,25 @@ def ifttt_status():
 
     return ""
 
+@app.route("/ifttt/v1/user/info")
+def ifttt_user_info():
+    """ User info endpoint for IFTTT platform endpoint tests """
+    errmsg = check_access_token()
+    if errmsg:
+        return errmsg, 401
+    headers = { 'content-type': "application/json", 'Authorization': f"Bearer {request.headers.get('Authorization').split()[1]}" }
+    res = requests.get(settings.auth0_userinfo, headers=headers)
+
+    data = res.json()
+
+    return json.dumps({
+        "data": {
+            "id": data["sub"],
+            "name": data["name"],
+            "url": "http//example.com/users/shaunaa126"
+        }
+    })
+
 @app.route("/ifttt/v1/test/setup", methods=["POST"])
 def ifttt_test_setup():
     """ Testdata endpoint for IFTTT platform endpoint tests """
@@ -190,6 +220,7 @@ def ifttt_test_setup():
 
     return json.dumps({
         "data": {
+            "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5qcHNaMVZkT1pwRWpGdmNNV2FqcCJ9.eyJpc3MiOiJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MzliN2JhMjljNDNjZDZmNzRlN2NhOWUiLCJhdWQiOlsibnVpc3RpY3Mtc2VydmljZS1hcGkiLCJodHRwczovL2Rldi04c21oNHBhZndyMThpeXdoLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzU3MDc2NDEsImV4cCI6MTY3NTc5NDA0MSwiYXpwIjoiV3U4SThjZU1EbklGYlFPYzFtVGl0elNtVm0zOU41blciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIGlmdHR0IG9mZmxpbmVfYWNjZXNzIn0.Tbfe0_7gkcDR91WFIdDjhUbWvUHr-Id2Pg016l-Djp-Xecfz7pJdThjBzz6T9yU0lyHy26bUVRfre14fZeksvG9HplSFQ3mhkK_5MQ36jMYe1iOCqo0yDYbWs_VGyQg2OLOM4zEXtN9C4mckmtkYElm_-QRpDfZqwM1uzOYywPCSAYRH4x2K5Hwbeaj6fK5bk8_jVL9WtDhjRZMoePaDc-13EB8KPmkC4YtypXAwr6mLsdCWdJlAW8A_ElFSIG-fut4PLEHUEvq1fjQ6KKl3L2h-UOykQZ8OeBW72q1C6I49uG8eG5BLhhpVjRe2HfH1hTFUGjCybIZRSKM1ZTD9HA",
             "samples": {
                 "triggers": {
                     "bunq_mutation": {
@@ -247,6 +278,11 @@ def ifttt_test_setup():
                     },
                     "bunq_oauth_expires": {
                         "hours": "9876543210",
+                    },
+                    "nuistics_newimage": {
+                        "account": test_account,
+                        "description_comparator": "equal",
+                        "description_value": "dog",
                     }
                 },
                 "actions": {
@@ -408,9 +444,12 @@ def ifttt_comparator_numeric_options():
            "description_comparator/options", methods=["POST"])
 @app.route("/ifttt/v1/triggers/bunq_request/fields/"\
            "description_comparator_2/options", methods=["POST"])
+@app.route("/ifttt/v1/triggers/nuistics_newimage/fields/"\
+           "description_comparator/options", methods=["POST"])
 def ifttt_comparator_alpha_options():
     """ Option values for alphanumeric comparators """
-    errmsg = check_ifttt_service_key()
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
     if errmsg:
         return errmsg, 401
 
@@ -492,6 +531,21 @@ def ifttt_account_options_mutation():
 def ifttt_account_options_request():
     """ Option values for request trigger account selection"""
     return ifttt_account_options(True, "Request")
+
+@app.route("/ifttt/v1/triggers/nuistics_newimage/fields/"\
+           "account/options", methods=["POST"])
+def ifttt_account_options_newimage():
+    """ Option values for newimage account selection"""
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
+    if errmsg:
+        return errmsg, 401
+    data = {"data": [
+        {"value": "NL42BUNQ0123456789", "label": "NL42BUNQ0123456789"},
+        {"value": "NL42BUNQ9876543210", "label": "NL42BUNQ9876543210"},
+    ]}
+    return json.dumps(data)
+    #return ifttt_account_options(False, None)
 
 @app.route("/ifttt/v1/actions/bunq_internal_payment/fields/"\
            "source_account/options", methods=["POST"])
@@ -657,6 +711,10 @@ def bunq2ifttt_request():
     """ Callback for bunq REQUEST events """
     return "", event.bunq_callback_request()
 
+@app.route("/nuistics_request", methods=["POST"])
+def nuistics_request():
+    """ Callback for nuistics REQUEST events """
+    return "", event.nuistics_callback_request()
 
 ###############################################################################
 # Event trigger endpoints
@@ -730,6 +788,25 @@ def trigger_oauth_expires_delete(triggerid):
         return errmsg, 401
     return event.trigger_oauth_expires_delete(triggerid)
 
+@app.route("/ifttt/v1/triggers/nuistics_newimage", methods=["POST"])
+def trigger_newimage():
+    print(request.headers.get('Authorization').split()[1])
+    """ Retrieve nuistics_newimage trigger items """
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
+    if errmsg:
+        return errmsg, 401
+    return event.trigger_newimage()
+
+@app.route("/ifttt/v1/triggers/nuistics_newimage/trigger_identity/<triggerid>",
+           methods=["DELETE"])
+def trigger_newimage_delete(triggerid):
+    """ Delete a trigger_identity for the nuistics_newimage trigger """
+    # errmsg = check_ifttt_service_key()
+    errmsg = check_access_token()
+    if errmsg:
+        return errmsg, 401
+    return event.trigger_newimage_delete(triggerid)
 
 ###############################################################################
 # Payment action endpoints

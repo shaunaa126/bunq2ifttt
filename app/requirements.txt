@@ -3,3 +3,5 @@ cryptography
 requests
 google-cloud-datastore
 Flask
+pyjwt[crypto]
+pydantic[dotenv]
