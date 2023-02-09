@@ -200,18 +200,6 @@ def nuistics_callback_request():
             print("[nuisticscb_request] trigger not enabled for this account")
             return 200
 
-        # item = {
-        #     "created_at": obj["created"],
-        #     "date": arrow.get(obj["created"]).format("YYYY-MM-DD"),
-        #     "account": acc,
-        #     "description": obj["description"],
-        #     "request_id": metaid,
-        #     "meta": {
-        #         "id": metaid,
-        #         "timestamp": arrow.get(obj["created"]).timestamp
-        #     }
-        # }
-
         item = {
             "created_at": arrow.utcnow().isoformat(),
             "account": acc,

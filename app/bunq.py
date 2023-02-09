@@ -160,7 +160,6 @@ def get_user_info(config):
     res = requests.get(settings.auth0_userinfo, headers=headers)
     data = res.json()
     config["user_id"] = data["sub"]
-    #user = UserInfo(name = data["name"], id = data["sub"], url = "http//example.com/users/shaunaa126")
 
 _TYPE_TRANSLATION = {
     "MonetaryAccountBank": "monetary-account-bank",

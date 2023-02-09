@@ -93,8 +93,7 @@ def set_bunq_oauth_response():
                 'Invalid code! <br><br>'\
                 '<a href="/">Click here to try again</a>')
 
-        redirect_url = "https://5a89-47-188-92-41.ngrok.io/auth"
-        # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
+        redirect_url = "https://2227-47-188-92-41.ngrok.io/auth"
         url = "https://dev-8smh4pafwr18iywh.us.auth0.com/oauth/token"
         body = {
             'client_id': oauthdata["client_id"],
@@ -110,7 +109,6 @@ def set_bunq_oauth_response():
         #               oauthdata["client_id"], oauthdata["client_secret"])
         req = requests.post(url, data=body)
         key = req.json()["access_token"]
-        print("Access token: " + key)
         
         oauthdata["timestamp"] = int(time.time())
         oauthdata["triggers"] = []
@@ -146,8 +144,6 @@ def set_bunq_oauth_api_key():
 
         key = request.form["bunqkey"]
         tokens = re.split("[:, \r\n\t]+", key.strip())
-        print("client id: " + tokens[2]);
-        print("client secret: " + tokens[5])
 
         if len(tokens) == 6 and len(tokens[2]) == 32 and len(tokens[5]) == 64:
             # OAuth client id/secret submitted
@@ -157,8 +153,7 @@ def set_bunq_oauth_api_key():
                 "allips": allips,
             }
             storage.store_large("bunq2IFTTT", "bunq_oauth_new", oauthdata)
-            redirect_url = "https://5a89-47-188-92-41.ngrok.io/auth"
-            # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
+            redirect_url = "https://2227-47-188-92-41.ngrok.io/auth"
             url = "https://dev-8smh4pafwr18iywh.us.auth0.com/authorize?response_type=code"\
                   "&client_id=" + tokens[2] + \
                   "&audience=nuistics-service-api" + \
@@ -203,8 +198,7 @@ def bunq_oauth_reauthorize():
     """ Reauthorize OAuth using the same client id/secret """
     oauthdata = storage.get_value("bunq2IFTTT", "bunq_oauth")
     storage.store_large("bunq2IFTTT", "bunq_oauth_new", oauthdata)
-    redirect_url = "https://5a89-47-188-92-41.ngrok.io/auth"
-    # redirect_url = "https://ifttt.com/channels/nuistics_ea2175f9cf/authorize"
+    redirect_url = "https://2227-47-188-92-41.ngrok.io/auth"
     url = "https://dev-8smh4pafwr18iywh.us.auth0.com/authorize?response_type=code"\
             "&client_id=" + oauthdata["client_id"] + \
             "&connection=CONNECTING" + \
